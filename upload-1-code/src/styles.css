@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #071410;
+  --color-felt: #14643c;
+  --color-felt-deep: #0e3a24;
+  --color-cream: #f4efe4;
+  --color-cream-dim: #d9d0bf;
+  --color-gold: #c4a35a;
+  --color-ink: #1a1208;
+  --color-danger: #9f2d2d;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Outfit", system-ui, sans-serif;
+  --radius-card: 0.7rem;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html,
+  body {
+    background: var(--color-bg);
+    color: var(--color-cream);
+    font-family: var(--font-sans);
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+  }
+}
+
+.felt {
+  background:
+    radial-gradient(120% 80% at 50% 40%, color-mix(in srgb, var(--color-felt) 92%, white) 0%, var(--color-felt) 42%, var(--color-felt-deep) 100%);
+}
+
+.card-shell {
+  border-radius: var(--radius-card);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.35);
+  background: var(--color-cream);
+  overflow: hidden;
+}
+
+.hand-scroll {
+  scrollbar-width: none;
+}
+.hand-scroll::-webkit-scrollbar {
+  display: none;
+}

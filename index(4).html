@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>75 Modern Card Tabletop</title>
+  <style>
+    :root {
+      --felt: #14643c;
+      --felt-deep: #0d3d25;
+      --cream: #f4efe4;
+      --ink: #1a1208;
+      --gold: #c4a35a;
+      --dim: rgba(244, 239, 228, 0.72);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1f7a4a, var(--felt-deep) 70%);
+      color: var(--cream);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.7rem; margin: 0 0 4px; }
+    .sub { color: var(--dim); margin: 0 0 16px; }
+    .card-ui, .panel {
+      background: rgba(13, 28, 18, 0.72);
+      border: 1px solid rgba(196, 163, 90, 0.35);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    label { display: block; font-size: 0.85rem; margin: 10px 0 4px; }
+    input, select {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: var(--cream);
+      color: var(--ink);
+    }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 140px; }
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: var(--gold);
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .btn.ghost { background: transparent; color: var(--cream); border: 1px solid var(--gold); }
+    .status { min-height: 1.2em; color: var(--gold); }
+    .table {
+      margin-top: 16px;
+      background: var(--felt);
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: inset 0 0 0 8px rgba(0,0,0,0.15);
+    }
+    .topbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .timer {
+      height: 10px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .timer > span { display: block; height: 100%; background: var(--gold); width: 100%; }
+    .piles { display: flex; justify-content: center; gap: 28px; min-height: 160px; align-items: center; }
+    .fan {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      min-height: 120px;
+      padding: 6px 40px 10px;
+    }
+    .fan .pcard { margin-left: -32px; box-shadow: 0 6px 10px rgba(0,0,0,0.35); }
+    .fan .pcard:first-child { margin-left: 0; }
+    .fan.you .pcard { transform-origin: bottom center; transition: transform 0.12s ease; }
+    .fan.you .pcard:hover { transform: translateY(-16px) scale(1.04); z-index: 4; }
+    .fan.them .pcard { height: 96px; }
+    .hand { display: flex; }
+    .pcard {
+      width: 78px;
+      height: 112px;
+      border-radius: 8px;
+      background: var(--cream);
+      color: var(--ink);
+      border: 0;
+      padding: 0;
+      flex: 0 0 auto;
+      overflow: hidden;
+      position: relative;
+    }
+    .pcard img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pcard .fallback { padding: 8px; font-size: 12px; }
+    .pcard.back { background: #2a1d4a; }
+    .seats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .seat { border: 1px solid rgba(244,239,228,0.25); border-radius: 12px; padding: 6px 10px; font-size: 0.85rem; }
+    .seat.on { border-color: var(--gold); }
+    .log { color: var(--dim); min-height: 1.4em; }
+    .suits { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .hidden { display: none; }
+    .note { font-size: 0.85rem; color: var(--dim); }
+    @media (max-width: 640px) {
+      .pcard { width: 64px; height: 92px; }
+      h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>75 Modern Card Tabletop</h1>
+    <p class="sub">Plugs, Gears, Hearts, Briefcases, Caps. Ace beats all. Zero wipes faces. Jokers fake a face against numbers.</p>
+
+    <section id="lobby" class="panel">
+      <div class="row">
+        <div>
+          <label for="name">Your name</label>
+          <input id="name" maxlength="16" placeholder="Name" />
+        </div>
+        <div>
+          <label for="mode">Game</label>
+          <select id="mode">
+            <option value="eights">Crazy Eights</option>
+            <option value="war">War</option>
+            <option value="screw">Screw</option>
+            <option value="climb">Climb</option>
+            <option value="tricks">Tricks</option>
+            <option value="blackjack">Blackjack</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="create">Create room</button>
+        <button class="btn ghost" id="solo">Play solo</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input id="code" maxlength="4" placeholder="4-letter code" style="text-transform:uppercase" />
+        <button class="btn" id="join">Join room</button>
+      </div>
+      <p class="status" id="status">Ready.</p>
+      <p class="note" id="netnote"></p>
+    </section>
+
+    <section id="table" class="table hidden">
+      <div class="topbar">
+        <strong id="roomlabel">Room</strong>
+        <span id="scoreboard">W 0 · L 0 · Push 0</span>
+        <span id="clock">60s</span>
+      </div>
+      <div class="timer"><span id="bar"></span></div>
+      <div class="seats" id="seats"></div>
+      <div class="note" id="opplabel">Opponent</div>
+      <div class="fan them" id="opphand"></div>
+      <div class="piles">
+        <div>
+          <div class="note">Draw</div>
+          <div id="drawpile"></div>
+        </div>
+        <div>
+          <div class="note">On the table</div>
+          <div class="fan" id="discardpile"></div>
+        </div>
+      </div>
+      <p class="log" id="log"></p>
+      <div class="suits hidden" id="suits"></div>
+      <div class="row">
+        <button class="btn" id="drawbtn">Draw</button>
+        <button class="btn" id="hitbtn">Hit</button>
+        <button class="btn ghost" id="standbtn">Stand</button>
+        <button class="btn ghost" id="flipbtn">Flip</button>
+        <button class="btn" id="startbtn">Start game</button>
+        <button class="btn" id="nextbtn">Next hand</button>
+        <button class="btn ghost" id="leave">Leave</button>
+      </div>
+      <div class="note" style="margin-top:10px" id="mylabel">Your hand</div>
+      <div class="fan you hand" id="hand"></div>
+    </section>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script>
+    const CARD_BASE = "upload-1-code/public/cards/";
+    const SUITS = ["plugs", "gears", "hearts", "briefcases", "caps"];
+    const SUIT_LABEL = { plugs: "Plugs", gears: "Gears", hearts: "Hearts", briefcases: "Briefcases", caps: "Caps" };
+    const RANKS = ["0","1","2","3","4","5","6","7","8","9","10","J","Q","K","A"];
+    const JOKERS = ["joker-ace","joker-wild","joker-mirror","joker-chaos","joker-null"];
+    const FACE = new Set(["J","Q","K"]);
+    const NUMBER = new Set(["1","2","3","4","5","6","7","8","9","10"]);
+    const RANK_VALUE = { "0":0,"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,J:11,Q:12,K:13,A:14 };
+    const BUILTIN_CONFIG = {
+      apiKey: "AIzaSyCSkbyyVVZDq8hs7eDpOu-9bMx5U1wnrws",
+      authDomain: "modern-updated-cards.firebaseapp.com",
+      databaseURL: "https://modern-updated-cards-default-rtdb.firebaseio.com",
+      projectId: "modern-updated-cards",
+      storageBucket: "modern-updated-cards.firebasestorage.app",
+      messagingSenderId: "777615352204",
+      appId: "1:777615352204:web:8c74b01e988db8327ab6a9",
+    };
+    const MODE_NAME = { eights: "Crazy Eights", war: "War", screw: "Screw", climb: "Climb", tricks: "Tricks", blackjack: "Blackjack" };
+    const TURN_MS = 60000;
+
+    const $ = (id) => document.getElementById(id);
+    const me = localStorage.getItem("playerId") || (localStorage.setItem("playerId", crypto.randomUUID()), localStorage.getItem("playerId"));
+    let db = null;
+    let roomRef = null;
+    let room = null;
+    let unsub = null;
+    let nextTimer = null;
+
+    function readyConfig(cfg) {
+      return cfg && cfg.apiKey && cfg.databaseURL && cfg.projectId;
+    }
+
+    function bootFirebase() {
+      const fileCfg = window.FIREBASE_CONFIG || {};
+      const cfg = readyConfig(fileCfg) ? fileCfg : BUILTIN_CONFIG;
+      if (typeof firebase === "undefined") {
+        $("netnote").textContent = "Firebase script blocked. Solo still works. Try another browser.";
+        return;
+      }
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(cfg);
+        db = firebase.database();
+        $("netnote").textContent = "Online rooms are on. Create a room and send the code.";
+      } catch (err) {
+        $("netnote").textContent = "Firebase did not start: " + err.message;
+      }
+    }
+
+    function deck() {
+      const cards = [];
+      for (const suit of SUITS) for (const rank of RANKS) cards.push({ id: suit + "-" + rank, suit, rank, joker: false });
+      for (const id of JOKERS) cards.push({ id, suit: "joker", rank: "JOKER", joker: true });
+      return shuffle(cards);
+    }
+    function shuffle(list) {
+      const a = list.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function isWild(c) { return c.joker || c.rank === "8"; }
+    function canPlay(card, top, lead) {
+      if (!top) return true;
+      if (isWild(card)) return true;
+      const suit = lead || (top.joker ? null : top.suit);
+      if (suit && card.suit === suit) return true;
+      if (!top.joker && card.rank === top.rank) return true;
+      return false;
+    }
+    function resolveMatchup(a, b) {
+      if (a.joker && b.joker) return { winner: "tie", reason: "Two jokers mirror." };
+      if (!a.joker && a.rank === "A") return { winner: "a", reason: "Ace beats everything." };
+      if (!b.joker && b.rank === "A") return { winner: "b", reason: "Ace beats everything." };
+      const zero = (c) => !c.joker && c.rank === "0";
+      const face = (c) => !c.joker && FACE.has(c.rank);
+      const numbered = (c) => !c.joker && NUMBER.has(c.rank);
+      if ((zero(a) && face(b)) || (zero(b) && face(a))) return { winner: "mutual", reason: "Zero and a face wipe each other out." };
+      if (zero(a) && numbered(b)) return { winner: "b", reason: "Zero loses to a number." };
+      if (zero(b) && numbered(a)) return { winner: "a", reason: "Zero loses to a number." };
+      if (zero(a) && zero(b)) return { winner: "tie", reason: "Zero against zero." };
+      if ((a.joker && zero(b)) || (b.joker && zero(a))) return { winner: "tie", reason: "Joker mirrors the zero." };
+      if (a.joker && numbered(b)) return { winner: "a", reason: "Joker fakes a face." };
+      if (b.joker && numbered(a)) return { winner: "b", reason: "Joker fakes a face." };
+      if (a.joker && face(b)) return { winner: "b", reason: "A real face exposes the joker." };
+      if (b.joker && face(a)) return { winner: "a", reason: "A real face exposes the joker." };
+      const va = RANK_VALUE[a.rank] || 0, vb = RANK_VALUE[b.rank] || 0;
+      if (va === vb) return { winner: "tie", reason: "Same rank." };
+      return va > vb ? { winner: "a", reason: "Higher rank." } : { winner: "b", reason: "Higher rank." };
+    }
+    function code() {
+      const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+      let s = "";
+      for (let i = 0; i < 4; i++) s += letters[Math.floor(Math.random() * letters.length)];
+      return s;
+    }
+    function label(card) {
+      if (card.joker) return card.id;
+      return card.rank + " of " + (SUIT_LABEL[card.suit] || card.suit);
+    }
+    function cardEl(card, click) {
+      const btn = document.createElement("button");
+      btn.className = "pcard";
+      btn.type = "button";
+      const img = document.createElement("img");
+      img.alt = label(card);
+      img.src = CARD_BASE + card.id + ".jpg";
+      img.onerror = () => { img.remove(); btn.textContent = label(card); };
+      btn.appendChild(img);
+      if (click) btn.addEventListener("click", click);
+      return btn;
+    }
+    function backEl() {
+      const d = document.createElement("div");
+      d.className = "pcard back";
+      const img = document.createElement("img");
+      img.src = CARD_BASE + "back.jpg";
+      img.alt = "Back";
+      img.onerror = () => { img.remove(); d.textContent = "Deck"; };
+      d.appendChild(img);
+      return d;
+    }
+
+    function showTable(on) {
+      $("lobby").classList.toggle("hidden", on);
+      $("table").classList.toggle("hidden", !on);
+    }
+
+    function render() {
+      if (!room) return;
+      showTable(true);
+      $("roomlabel").textContent = room.code + " · " + (MODE_NAME[room.mode] || room.mode);
+      $("log").textContent = room.log || "";
+      $("drawpile").replaceChildren(room.draw && room.draw.length ? backEl() : document.createTextNode("Empty"));
+      const rec = room.record || { you: 0, them: 0, push: 0 };
+      $("scoreboard").textContent = "W " + rec.you + " · L " + rec.them + " · Push " + rec.push;
+      const opp = (room.order || []).find((id) => id !== me);
+      const oppPlayer = opp && room.players[opp];
+      const oppHand = $("opphand");
+      oppHand.replaceChildren();
+      if (room.mode === "blackjack") {
+        $("opplabel").textContent = "Dealer" + (room.reveal ? " · " + bjTotal(room.dealer || []) : " · hole card down");
+        (room.dealer || []).forEach((card, i) => oppHand.appendChild(!room.reveal && i > 0 ? backEl() : cardEl(card)));
+      } else {
+        $("opplabel").textContent = (oppPlayer?.name || "Table") + " · " + ((oppPlayer?.hand || []).length) + " cards, backs only";
+        (oppPlayer?.hand || []).forEach(() => oppHand.appendChild(backEl()));
+      }
+      const played = (room.discard || []).slice(-4);
+      const center = $("discardpile");
+      center.replaceChildren();
+      played.forEach((card) => center.appendChild(cardEl(card)));
+      if (!played.length) center.textContent = "—";
+      const seats = $("seats");
+      seats.replaceChildren();
+      (room.order || []).forEach((id) => {
+        const p = room.players[id];
+        const el = document.createElement("div");
+        el.className = "seat" + (id === room.turnId ? " on" : "");
+        const score = room.scores && room.scores[id] ? " · " + room.scores[id] : "";
+        el.textContent = (p?.name || "Player") + " · " + ((p?.hand || []).length) + score + (id === me ? " (you)" : "");
+        seats.appendChild(el);
+      });
+      const mine = room.players[me];
+      const hand = $("hand");
+      hand.replaceChildren();
+      (mine?.hand || []).forEach((card) => {
+        hand.appendChild(cardEl(card, () => play(card)));
+      });
+      $("drawbtn").classList.toggle("hidden", room.mode !== "eights" && room.mode !== "climb");
+      $("flipbtn").classList.toggle("hidden", room.mode !== "war");
+      $("hitbtn").classList.toggle("hidden", room.mode !== "blackjack" || room.reveal);
+      $("standbtn").classList.toggle("hidden", room.mode !== "blackjack" || room.reveal);
+      $("startbtn").classList.toggle("hidden", room.started || room.hostId !== me);
+      $("nextbtn").classList.toggle("hidden", !room.winnerId);
+      $("mylabel").textContent = room.mode === "blackjack" ? "Your hand · " + bjTotal(room.players[me]?.hand || []) : "Your hand";
+      const suitBox = $("suits");
+      const waiting = room.pending && room.turnId === me;
+      suitBox.classList.toggle("hidden", !waiting);
+      if (waiting && !suitBox.childElementCount) {
+        SUITS.forEach((s) => {
+          const b = document.createElement("button");
+          b.className = "btn";
+          b.textContent = SUIT_LABEL[s];
+          b.onclick = () => nameSuit(s);
+          suitBox.appendChild(b);
+        });
+      }
+      if (!waiting) suitBox.replaceChildren();
+      paintTimer();
+    }
+
+    function paintTimer() {
+      if (!room || !room.turnStarted || room.winnerId) {
+        $("bar").style.width = "100%";
+        $("clock").textContent = room && room.winnerId ? "Done" : "60s";
+        return;
+      }
+      const left = Math.max(0, TURN_MS - (Date.now() - room.turnStarted));
+      $("bar").style.width = (left / TURN_MS * 100) + "%";
+      $("clock").textContent = Math.ceil(left / 1000) + "s";
+      if (left <= 0 && room.turnId === me) timeout();
+    }
+
+    function tally(state) {
+      if (!state || state.tallied || !state.winnerId) return state;
+      const record = { ...(state.record || { you: 0, them: 0, push: 0 }) };
+      if (state.winnerId === me) record.you += 1;
+      else if (state.winnerId === "push") record.push += 1;
+      else record.them += 1;
+      state.record = record;
+      state.tallied = true;
+      state.log = (state.log || "") + "  ·  W " + record.you + " L " + record.them + " Push " + record.push + ". Next hand coming.";
+      return state;
+    }
+    function nextRound() {
+      if (!room) return;
+      if (nextTimer) { clearTimeout(nextTimer); nextTimer = null; }
+      save(deal(room));
+    }
+    function scheduleNext() {
+      if (!room || !room.winnerId) return;
+      if (nextTimer) clearTimeout(nextTimer);
+      nextTimer = setTimeout(() => { nextTimer = null; if (room && room.winnerId) nextRound(); }, 1600);
+    }
+    function save(next) {
+      if (next && next.winnerId && !next.tallied) tally(next);
+      room = next;
+      if (roomRef) roomRef.set(next).catch((err) => $("status").textContent = "Sync failed: " + err.message);
+      render();
+      if (room && room.solo && !room.winnerId) maybeBot();
+      if (room && room.winnerId) scheduleNext();
+    }
+
+    function nextId(state, from) {
+      const order = state.order;
+      const i = order.indexOf(from);
+      return order[(i + 1) % order.length];
+    }
+
+    function deal(base) {
+      const cards = deck();
+      const order = base.order.slice();
+      const players = { ...base.players };
+      const handSize = base.mode === "war" ? Math.floor(cards.length / order.length) : base.mode === "screw" ? 5 : base.mode === "blackjack" ? 2 : 7;
+      order.forEach((id) => {
+        players[id] = { ...players[id], hand: cards.splice(0, handSize) };
+      });
+      const dealer = base.mode === "blackjack" ? [cards.pop(), cards.pop()] : null;
+      const open = base.mode === "climb" || base.mode === "screw" || base.mode === "tricks" || base.mode === "blackjack";
+      const first = open ? null : cards.pop();
+      const wild = base.mode === "eights" && first && isWild(first);
+      const scores = {};
+      order.forEach((id) => { scores[id] = 0; });
+      return {
+        ...base,
+        players,
+        scores,
+        record: base.record || { you: 0, them: 0, push: 0 },
+        tallied: false,
+        dealer,
+        reveal: false,
+        draw: cards,
+        discard: first ? [first] : [],
+        lead: null,
+        tableCard: null,
+        turnId: order[0],
+        turnStarted: Date.now(),
+        pending: wild,
+        afterId: order[0],
+        started: true,
+        winnerId: null,
+        log: (base.solo ? "Table is across from you. " : "") + (base.mode === "blackjack" ? "Hit or stand. Ace is 1 or 11. Faces are 10. Zero is 0. A joker counts as whatever helps." : wild ? "Opening card is wild. Name the suit." : "Game on."),
+      };
+    }
+
+    function openRoom(c, mode, solo) {
+      const name = $("name").value.trim() || "Player";
+      const state = {
+        code: c,
+        mode,
+        hostId: me,
+        solo: !!solo,
+        order: [me],
+        players: { [me]: { name, hand: [] } },
+        draw: [],
+        discard: [],
+        lead: null,
+        turnId: me,
+        turnStarted: Date.now(),
+        pending: false,
+        afterId: me,
+        started: false,
+        winnerId: null,
+        log: solo ? "Solo table." : "Waiting for players. Host starts when ready.",
+      };
+      if (solo) {
+        state.order.push("bot");
+        state.players.bot = { name: "Table", hand: [] };
+        roomRef = null;
+        save(deal(state));
+        return;
+      }
+      if (!db) {
+        $("status").textContent = "Online rooms need Firebase. Use Play solo for now, or add firebase-config.js.";
+        return;
+      }
+      roomRef = db.ref("rooms/" + c);
+      roomRef.set(state).then(() => watch(c)).catch((err) => $("status").textContent = err.message);
+    }
+
+    function watch(c) {
+      if (unsub) roomRef.off();
+      roomRef = db.ref("rooms/" + c);
+      roomRef.on("value", (snap) => {
+        room = snap.val();
+        if (!room) return;
+        render();
+        maybeBot();
+      });
+      unsub = true;
+    }
+
+    function join(c) {
+      if (!db) {
+        $("status").textContent = "Online join needs Firebase. Solo still works.";
+        return;
+      }
+      const name = $("name").value.trim() || "Player";
+      roomRef = db.ref("rooms/" + c);
+      roomRef.transaction((cur) => {
+        if (!cur) return cur;
+        cur.players = cur.players || {};
+        cur.order = cur.order || [];
+        if (!cur.players[me]) {
+          cur.players[me] = { name, hand: [] };
+          cur.order.push(me);
+          cur.log = name + " joined.";
+        }
+        return cur;
+      }).then(() => watch(c)).catch((err) => $("status").textContent = err.message);
+    }
+
+    function play(card) {
+      if (!room || !room.started || room.winnerId || room.turnId !== me || room.pending) return;
+      if (room.mode === "war" || room.mode === "blackjack") return;
+      if (room.mode === "screw" || room.mode === "tricks") return playDuel(card);
+      if (room.mode === "climb") return playClimb(card);
+      const top = room.discard[room.discard.length - 1];
+      if (!canPlay(card, top, room.lead)) {
+        room.log = "That card does not match.";
+        render();
+        return;
+      }
+      const hand = room.players[me].hand.filter((c) => c.id !== card.id);
+      const next = {
+        ...room,
+        players: { ...room.players, [me]: { ...room.players[me], hand } },
+        discard: room.discard.concat(card),
+        lead: null,
+      };
+      if (hand.length === 0) {
+        next.winnerId = me;
+        next.log = "You emptied your hand.";
+        save(next);
+        return;
+      }
+      if (isWild(card)) {
+        next.pending = true;
+        next.afterId = nextId(room, me);
+        next.log = label(card) + " is wild. Name the suit.";
+        save(next);
+        return;
+      }
+      next.turnId = nextId(room, me);
+      next.turnStarted = Date.now();
+      next.log = "Played " + label(card) + ".";
+      save(next);
+    }
+
+    function playClimb(card) {
+      const top = room.discard[room.discard.length - 1];
+      if (top) {
+        const result = resolveMatchup(card, top);
+        if (result.winner !== "a") {
+          room.log = "Must beat the pile. " + result.reason;
+          render();
+          return;
+        }
+      }
+      const hand = room.players[me].hand.filter((c) => c.id !== card.id);
+      const next = {
+        ...room,
+        players: { ...room.players, [me]: { ...room.players[me], hand } },
+        discard: room.discard.concat(card),
+        turnId: nextId(room, me),
+        turnStarted: Date.now(),
+        log: "Climbed with " + label(card) + ".",
+      };
+      if (!hand.length) { next.winnerId = me; next.log = "You climbed out."; }
+      save(next);
+    }
+
+    function playDuel(card) {
+      const hand = room.players[me].hand.filter((c) => c.id !== card.id);
+      const players = { ...room.players, [me]: { ...room.players[me], hand } };
+      if (!room.tableCard) {
+        save({
+          ...room,
+          players,
+          tableCard: { id: me, card },
+          discard: [card],
+          turnId: nextId(room, me),
+          turnStarted: Date.now(),
+          log: "Led " + label(card) + ".",
+        });
+        return;
+      }
+      const lead = room.tableCard;
+      const result = resolveMatchup(card, lead.card);
+      const scores = { ...(room.scores || {}) };
+      let winner = null;
+      if (result.winner === "a") winner = me;
+      else if (result.winner === "b") winner = lead.id;
+      if (winner) scores[winner] = (scores[winner] || 0) + 1;
+      const next = {
+        ...room,
+        players,
+        scores,
+        tableCard: null,
+        discard: [lead.card, card],
+        turnId: winner || nextId(room, me),
+        turnStarted: Date.now(),
+        log: label(card) + " vs " + label(lead.card) + ". " + result.reason,
+      };
+      const target = room.mode === "screw" ? 5 : null;
+      if (target && winner && scores[winner] >= target) next.winnerId = winner;
+      if (room.mode === "tricks" && room.order.every((id) => !next.players[id].hand.length)) {
+        const best = room.order.slice().sort((a, b) => (scores[b] || 0) - (scores[a] || 0))[0];
+        next.winnerId = best;
+      }
+      if (!hand.length && room.mode === "screw") next.log += " Hand empty.";
+      save(next);
+    }
+
+    function bjValue(card, aceHigh) {
+      if (card.joker) return aceHigh ? 11 : 1;
+      if (card.rank === "A") return aceHigh ? 11 : 1;
+      if (FACE.has(card.rank)) return 10;
+      return Number(card.rank) || 0;
+    }
+    function bjTotal(hand) {
+      let total = 0;
+      let flex = 0;
+      (hand || []).forEach((c) => {
+        if (c.joker || c.rank === "A") { flex += 1; total += 1; }
+        else total += bjValue(c, false);
+      });
+      while (flex && total + 10 <= 21) { total += 10; flex -= 1; }
+      return total;
+    }
+    function hit() {
+      if (!room || room.mode !== "blackjack" || room.reveal || room.winnerId) return;
+      if (!room.draw.length) return;
+      const card = room.draw.shift();
+      const hand = room.players[me].hand.concat(card);
+      const total = bjTotal(hand);
+      const next = { ...room, draw: room.draw, players: { ...room.players, [me]: { ...room.players[me], hand } }, log: "Hit. You have " + total + "." };
+      if (total > 21) { next.reveal = true; next.winnerId = "dealer"; next.log = "Bust at " + total + "."; }
+      save(next);
+    }
+    function stand() {
+      if (!room || room.mode !== "blackjack" || room.reveal) return;
+      const dealer = room.dealer.slice();
+      while (bjTotal(dealer) < 17 && room.draw.length) dealer.push(room.draw.shift());
+      const you = bjTotal(room.players[me].hand);
+      const them = bjTotal(dealer);
+      let winner = "push";
+      if (them > 21 || you > them) winner = me;
+      else if (them > you) winner = "dealer";
+      save({
+        ...room,
+        dealer,
+        draw: room.draw,
+        reveal: true,
+        winnerId: winner,
+        log: "You " + you + " · Dealer " + them + (them > 21 ? " bust." : "."),
+      });
+    }
+
+    function nameSuit(suit) {
+      if (!room || !room.pending || room.turnId !== me) return;
+      save({
+        ...room,
+        lead: suit,
+        pending: false,
+        turnId: room.afterId,
+        turnStarted: Date.now(),
+        log: "Suit is " + SUIT_LABEL[suit] + ".",
+      });
+    }
+
+    function draw() {
+      if (!room || room.turnId !== me || room.pending || room.winnerId) return;
+      if (room.mode !== "eights" && room.mode !== "climb") return;
+      if (!room.draw.length && room.discard.length > 1) {
+        const top = room.discard.pop();
+        room.draw = shuffle(room.discard);
+        room.discard = [top];
+      }
+      if (!room.draw.length) {
+        save({ ...room, turnId: nextId(room, me), turnStarted: Date.now(), log: "Nothing left to draw." });
+        return;
+      }
+      const card = room.draw.shift();
+      const hand = room.players[me].hand.concat(card);
+      const next = { ...room, draw: room.draw, players: { ...room.players, [me]: { ...room.players[me], hand } } };
+      if (room.mode === "climb") {
+        next.turnId = nextId(room, me);
+        next.turnStarted = Date.now();
+        next.log = "Drew and passed.";
+        save(next);
+        return;
+      }
+      const top = next.discard[next.discard.length - 1];
+      if (canPlay(card, top, next.lead)) {
+        next.players[me].hand = hand.filter((c) => c.id !== card.id);
+        next.discard = next.discard.concat(card);
+        next.log = "Drew and played " + label(card) + ".";
+        if (!next.players[me].hand.length) next.winnerId = me;
+        else if (isWild(card)) { next.pending = true; next.afterId = nextId(room, me); }
+        else { next.turnId = nextId(room, me); next.turnStarted = Date.now(); next.lead = null; }
+      } else {
+        next.turnId = nextId(room, me);
+        next.turnStarted = Date.now();
+        next.log = "Drew and could not play.";
+      }
+      save(next);
+    }
+
+    function flip() {
+      if (!room || room.mode !== "war" || room.winnerId) return;
+      const a = room.players[me];
+      const otherId = room.order.find((id) => id !== me);
+      const b = room.players[otherId];
+      if (!a.hand.length || !b.hand.length) {
+        save({ ...room, winnerId: a.hand.length ? me : otherId, log: "Out of cards." });
+        return;
+      }
+      const yours = a.hand.shift();
+      const theirs = b.hand.shift();
+      const result = resolveMatchup(yours, theirs);
+      const pot = [yours, theirs];
+      if (result.winner === "a") a.hand.push(...pot);
+      else if (result.winner === "b") b.hand.push(...pot);
+      else { a.hand.push(yours); b.hand.push(theirs); }
+      save({
+        ...room,
+        players: { ...room.players, [me]: a, [otherId]: b },
+        discard: [yours, theirs],
+        log: label(yours) + " vs " + label(theirs) + ". " + result.reason,
+      });
+    }
+
+    function timeout() {
+      if (!room || room.turnId !== me || room.winnerId || !room.started) return;
+      if (room.pending) return nameSuit("plugs");
+      if (room.mode === "war") return flip();
+      const hand = room.players[me].hand || [];
+      if (room.mode === "climb") {
+        const top = room.discard[room.discard.length - 1];
+        const legal = hand.find((c) => !top || resolveMatchup(c, top).winner === "a");
+        if (legal) return playClimb(legal);
+        return draw();
+      }
+      if (room.mode === "screw" || room.mode === "tricks") {
+        if (hand[0]) return playDuel(hand[0]);
+        return;
+      }
+      const top = room.discard[room.discard.length - 1];
+      const legal = hand.find((c) => canPlay(c, top, room.lead));
+      if (legal) play(legal);
+      else draw();
+    }
+
+    function botPlayCard(card) {
+      const bot = room.players.bot;
+      bot.hand = bot.hand.filter((c) => c.id !== card.id);
+      return bot;
+    }
+
+    function maybeBot() {
+      if (!room || !room.solo || room.turnId !== "bot" || room.winnerId || !room.started || room.mode === "blackjack" || room.mode === "war") return;
+      setTimeout(() => {
+        if (!room || room.turnId !== "bot" || room.winnerId) return;
+        const bot = room.players.bot;
+        if (room.mode === "war") {
+          const b = room.players[me];
+          if (!bot.hand.length || !b.hand.length) return;
+          const yours = bot.hand.shift();
+          const theirs = b.hand.shift();
+          const result = resolveMatchup(yours, theirs);
+          if (result.winner === "a") bot.hand.push(yours, theirs);
+          else if (result.winner === "b") b.hand.push(yours, theirs);
+          else { bot.hand.push(yours); b.hand.push(theirs); }
+          save({ ...room, players: { ...room.players, bot, [me]: b }, discard: [yours, theirs], turnId: me, log: "Table flipped. " + result.reason });
+          return;
+        }
+        if (room.mode === "screw" || room.mode === "tricks") {
+          const card = bot.hand[0];
+          if (!card) return;
+          bot.hand = bot.hand.slice(1);
+          if (!room.tableCard) {
+            save({ ...room, players: { ...room.players, bot }, tableCard: { id: "bot", card }, discard: [card], turnId: me, turnStarted: Date.now(), log: "Table led " + label(card) + "." });
+            return;
+          }
+          const lead = room.tableCard;
+          const result = resolveMatchup(card, lead.card);
+          const scores = { ...(room.scores || {}) };
+          let winner = null;
+          if (result.winner === "a") winner = "bot";
+          else if (result.winner === "b") winner = lead.id;
+          if (winner) scores[winner] = (scores[winner] || 0) + 1;
+          const next = { ...room, players: { ...room.players, bot }, scores, tableCard: null, discard: [lead.card, card], turnId: winner || me, turnStarted: Date.now(), log: "Table: " + result.reason };
+          if (room.mode === "screw" && winner && scores[winner] >= 5) next.winnerId = winner;
+          if (room.mode === "tricks" && !bot.hand.length && !room.players[me].hand.length) next.winnerId = (scores.bot || 0) >= (scores[me] || 0) ? "bot" : me;
+          save(next);
+          return;
+        }
+        if (room.mode === "climb") {
+          const top = room.discard[room.discard.length - 1];
+          const legal = bot.hand.find((c) => !top || resolveMatchup(c, top).winner === "a");
+          if (!legal) {
+            if (room.draw.length) bot.hand.push(room.draw.shift());
+            save({ ...room, players: { ...room.players, bot }, turnId: me, turnStarted: Date.now(), log: "Table passed." });
+            return;
+          }
+          bot.hand = bot.hand.filter((c) => c.id !== legal.id);
+          const next = { ...room, players: { ...room.players, bot }, discard: room.discard.concat(legal), turnId: me, turnStarted: Date.now(), log: "Table climbed with " + label(legal) + "." };
+          if (!bot.hand.length) next.winnerId = "bot";
+          save(next);
+          return;
+        }
+        const top = room.discard[room.discard.length - 1];
+        const legal = bot.hand.find((c) => canPlay(c, top, room.lead));
+        if (!legal) {
+          if (room.draw.length) bot.hand.push(room.draw.shift());
+          save({ ...room, players: { ...room.players, bot }, turnId: me, turnStarted: Date.now(), log: "Table drew." });
+          return;
+        }
+        bot.hand = bot.hand.filter((c) => c.id !== legal.id);
+        const next = { ...room, players: { ...room.players, bot }, discard: room.discard.concat(legal), lead: isWild(legal) ? "plugs" : null, turnId: me, turnStarted: Date.now(), pending: false, log: "Table played " + label(legal) + "." };
+        if (!bot.hand.length) next.winnerId = "bot";
+        save(next);
+      }, 700);
+    }
+
+    $("create").onclick = () => {
+      const c = code();
+      $("code").value = c;
+      $("status").textContent = "Room " + c;
+      openRoom(c, $("mode").value, !db);
+    };
+    $("solo").onclick = () => openRoom(code(), $("mode").value, true);
+    $("join").onclick = () => {
+      const c = $("code").value.trim().toUpperCase();
+      if (c.length !== 4) { $("status").textContent = "Enter the 4-letter code."; return; }
+      $("status").textContent = "Joining " + c;
+      join(c);
+    };
+    $("drawbtn").onclick = draw;
+    $("hitbtn").onclick = hit;
+    $("standbtn").onclick = stand;
+    $("flipbtn").onclick = flip;
+    $("startbtn").onclick = () => { if (room && room.hostId === me && !room.started) save(deal(room)); };
+    $("nextbtn").onclick = nextRound;
+    $("leave").onclick = () => { showTable(false); if (nextTimer) clearTimeout(nextTimer); if (roomRef) roomRef.off(); room = null; };
+    setInterval(paintTimer, 250);
+    bootFirebase();
+    const params = new URLSearchParams(location.search);
+    if (params.get("room")) $("code").value = params.get("room");
+  </script>
+</body>
+</html>
